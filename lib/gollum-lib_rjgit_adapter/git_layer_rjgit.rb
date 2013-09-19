@@ -83,7 +83,7 @@ module Gollum
       
       # Grit::Commit.list_from_string(@wiki.repo, log)
       def self.list_from_string(repo, log)
-        Grit::Commit.list_from_string(repo, log)
+        RJGit::Commit.list_from_string(repo, log)
       end
       
     end
@@ -211,12 +211,12 @@ module Gollum
       end
       
       def self.init(path, git_options = {}, repo_options = {})
-        Grit::Repo.init(path, git_options, repo_options)
+        RJGit::Repo.init(path, git_options, repo_options)
         self.new(path, {:is_bare => false})
       end
       
       def self.init_bare(path, git_options = {}, repo_options = {})
-        Grit::Repo.init_bare(path, git_options, repo_options)
+        RJGit::Repo.init_bare(path, git_options, repo_options)
         self.new(path, {:is_bare => true})
       end
       
@@ -239,7 +239,7 @@ module Gollum
       end
       
       def commits(start = 'master', max_count = 10, skip = 0)
-        @repo.commits(start, max_count, skip).map{|commit| Gollum::Git::Commit.new(commit)}
+        @repo.commits(start, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
       end
       
       # @wiki.repo.head.commit.sha
