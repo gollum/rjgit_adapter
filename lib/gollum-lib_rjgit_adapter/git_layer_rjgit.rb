@@ -156,6 +156,8 @@ module Gollum
     
     class Index
       
+      import 'org.eclipse.jgit.revwalk.RevWalk'
+      
       def initialize(index)
         @index = index
         @current_tree = nil
