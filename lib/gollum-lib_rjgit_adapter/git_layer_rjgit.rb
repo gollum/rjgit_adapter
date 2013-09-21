@@ -8,6 +8,7 @@ module Gollum
     class Actor
       
       attr_accessor :name, :email
+      attr_reader :actor
       
       def initialize(name, email)
         @name = name
@@ -69,7 +70,7 @@ module Gollum
       end
       
       def author
-        author = @commit.author
+        author = @commit.actor
         Gollum::Git::Actor.new(author.name, author.email)
       end
       
@@ -78,7 +79,7 @@ module Gollum
       end
       
       def tree
-        Gollum::Git::Tree.new(@commit.tree)
+        Gollum::Git::Tree.new(@commit.get_tree)
       end
       
       # Grit::Commit.list_from_string(@wiki.repo, log)
@@ -157,7 +158,6 @@ module Gollum
       
       def initialize(index)
         @index = index
-        @tree = Gollum::Git::Tree.new(@index.tree)
         @current_tree = nil
       end
       
@@ -170,16 +170,22 @@ module Gollum
       end
       
       # index.commit(@options[:message], parents, actor, nil, @wiki.ref)
-      def commit(message, parents = nil, actor = nil, last_tree = nil, head = 'master')
-        @index.commit(message, parents, actor, last_tree, head)
+      def commit(message, parents = nil, actor = nil, last_tree = nil, head = nil)
+        actor = actor ? actor.actor : Gollum::Git::Actor.new("Gollum", "gollum@wiki")
+        @index.commit(message, actor, parents, head)
       end
       
       def tree
-        @tree ||= Gollum::Git::Tree.new(@index.tree)
+        @index.treemap
       end
       
       def read_tree(id)
-        @index.read_tree(id)
+        walk = RevWalk.new(@index.jrepo)
+          begin
+            @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(ObjectId.from_string(id)))
+          rescue
+            raise Gollum::Git::NoSuchShaFound
+          end
         @current_tree = Gollum::Git::Tree.new(@index.current_tree)
       end
       
@@ -248,7 +254,7 @@ module Gollum
       end
       
       def index
-        @index ||= Gollum::Git::Index.new(@repo.index)
+        @index ||= Gollum::Git::Index.new(RJGit::Plumbing::Index.new(@repo))
       end
       
       def log(commit = 'master', path = nil, options = {})
