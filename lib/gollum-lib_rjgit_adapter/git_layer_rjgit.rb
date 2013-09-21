@@ -79,7 +79,7 @@ module Gollum
       end
       
       def tree
-        Gollum::Git::Tree.new(@commit.get_tree)
+        Gollum::Git::Tree.new(@commit.tree)
       end
       
       # Grit::Commit.list_from_string(@wiki.repo, log)
