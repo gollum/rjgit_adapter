@@ -196,16 +196,16 @@ module Gollum
     end
     
     class Ref
-      def initialize(ref)
-        @ref = ref
+      def initialize(name, commit)
+        @name, @commit = name, commit
       end
       
       def name
-        @ref.name
+        @name
       end
       
       def commit
-        Gollum::Git::Commit.new(@ref.commit)
+        Gollum::Git::Commit.new(@commit)
       end
             
     end
@@ -250,7 +250,7 @@ module Gollum
       
       # @wiki.repo.head.commit.sha
       def head
-        Gollum::Git::Ref.new(@repo.head)
+        Gollum::Git::Ref.new("refs/heads/master", @repo.head)
       end
       
       def index
