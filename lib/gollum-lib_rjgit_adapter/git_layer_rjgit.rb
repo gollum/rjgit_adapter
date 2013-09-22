@@ -23,18 +23,23 @@ module Gollum
     end
     
     class Blob
+      import 'org.eclipse.jgit.revwalk.RevWalk'
+      
+      attr_reader :size
+      
       def self.create(repo, options)
-        #Grit::Blob.create(repo, :id => @sha, :name => name, :size => @size, :mode => @mode)
-        blob = RJGit::Blob.new_from_string(repo, '')
-        # Currently unsupported, [:name, :id, :mode] attributes are currently read-only in RJGit.
-        # blob.name = options[:name]
-        # blob.id = options[:id]
-        # blob.mode = options[:mode]
-        self.new(blob)
+        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], repo.find(options[:id], :tree)))
+        blob.set_size(options[:size])
+        return blob
       end
       
       def initialize(blob)
         @blob = blob
+      end
+      
+      # Not required by gollum-lib. Should be private/protected?
+      def set_size(size)
+        @size = size
       end
       
       def data
@@ -161,6 +166,7 @@ module Gollum
     class Index
       
       import 'org.eclipse.jgit.revwalk.RevWalk'
+      import 'org.eclipse.jgit.lib.ObjectId'
       
       def initialize(index)
         @index = index
@@ -187,11 +193,11 @@ module Gollum
       
       def read_tree(id)
         walk = RevWalk.new(@index.jrepo)
-          begin
+          #begin
             @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(ObjectId.from_string(id)))
-          rescue
-            raise Gollum::Git::NoSuchShaFound
-          end
+            #rescue
+            #raise Gollum::Git::NoSuchShaFound
+            #end
         @current_tree = Gollum::Git::Tree.new(@index.current_tree)
       end
       
@@ -252,6 +258,11 @@ module Gollum
       
       def commits(start = 'master', max_count = 10, skip = 0)
         @repo.commits(start, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
+      end
+      
+      # Not required by gollum-lib
+      def find(sha, type)
+        @repo.find(sha, type)
       end
       
       # @wiki.repo.head.commit.sha
