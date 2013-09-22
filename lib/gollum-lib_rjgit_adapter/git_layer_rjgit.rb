@@ -25,7 +25,11 @@ module Gollum
     class Blob
       def self.create(repo, options)
         #Grit::Blob.create(repo, :id => @sha, :name => name, :size => @size, :mode => @mode)
-        blob = Grit::Blob.create(repo, options)
+        blob = RJGit::Blob.new_from_string(repo, '')
+        # Currently unsupported, [:name, :id, :mode] attributes are currently read-only in RJGit.
+        # blob.name = options[:name]
+        # blob.id = options[:id]
+        # blob.mode = options[:mode]
         self.new(blob)
       end
       
