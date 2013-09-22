@@ -279,14 +279,6 @@ module Gollum
         @tree = tree
       end
       
-      def keys
-        @tree.keys
-      end
-      
-      def [](i)
-        @tree[i]
-      end
-      
       def id
         @tree.id
       end
