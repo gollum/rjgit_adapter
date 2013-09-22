@@ -182,7 +182,7 @@ module Gollum
       end
       
       def tree
-        @current_tree
+        @index.treemap
       end
       
       def read_tree(id)
