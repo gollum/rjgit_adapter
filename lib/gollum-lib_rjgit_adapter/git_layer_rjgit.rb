@@ -136,7 +136,7 @@ module Gollum
       
       def rev_list(options, *refs)
         @git.rev_list(options, *refs)
-      rescue Grit::GitRuby::Repository::NoSuchShaFound
+      rescue 
         raise Gollum::Git::NoSuchShaFound
       end
       
