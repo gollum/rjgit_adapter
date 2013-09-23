@@ -23,12 +23,11 @@ module Gollum
     end
     
     class Blob
-      import 'org.eclipse.jgit.revwalk.RevWalk'
       
       attr_reader :size
       
       def self.create(repo, options)
-        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], repo.find(options[:id], :tree)))
+        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], repo.find(options[:id], :blob).jblob))
         blob.set_size(options[:size])
         return blob
       end
@@ -40,6 +39,19 @@ module Gollum
       # Not required by gollum-lib. Should be private/protected?
       def set_size(size)
         @size = size
+      end
+      
+      def id
+        @blob.id
+      end
+      alias_method :sha, :id
+      
+      def mode
+        @blob.mode
+      end
+      
+      def path
+        @blob.path
       end
       
       def data
