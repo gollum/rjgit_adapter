@@ -260,9 +260,9 @@ module Gollum
       end
       
       def commit(id)
-        commit = @repo.commit(id)
+        commit = @repo.find(id, :commit)
         return nil if commit.nil?
-        Gollum::Git::Commit.new(@repo.commit(id))
+        Gollum::Git::Commit.new(commit)
       end
       
       def commits(start = 'master', max_count = 10, skip = 0)
