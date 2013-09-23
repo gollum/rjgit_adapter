@@ -44,14 +44,9 @@ module Gollum
       def id
         @blob.id
       end
-      alias_method :sha, :id
       
       def mode
         @blob.mode
-      end
-      
-      def path
-        @blob.path
       end
       
       def data
