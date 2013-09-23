@@ -206,9 +206,7 @@ module Gollum
       def read_tree(id)
         walk = RevWalk.new(@index.jrepo)
           #begin
-        revcommit = walk.parseCommit(ObjectId.from_string(id))
-        revtree = revcommit.get_tree
-        @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, revtree)
+        @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(ObjectId.from_string(id)))
         #rescue
         #raise Gollum::Git::NoSuchShaFound
         #end
