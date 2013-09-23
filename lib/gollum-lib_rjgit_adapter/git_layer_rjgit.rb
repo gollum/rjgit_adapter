@@ -27,7 +27,9 @@ module Gollum
       attr_reader :size
       
       def self.create(repo, options)
-        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], repo.find(options[:id], :blob).jblob))
+        jblob = repo.find(options[:id], :blob).jblob
+        return nil if jblob.nil?
+        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], jblob))
         blob.set_size(options[:size])
         return blob
       end
