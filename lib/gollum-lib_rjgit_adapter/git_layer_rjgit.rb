@@ -259,7 +259,10 @@ module Gollum
         @git ||= Gollum::Git::Git.new(@repo.git)
       end
       
-      def commit(id)
+      def commit(ref)
+        objectid = @repo.jrepo.resolve(ref)
+        return nil if objectid.nil?
+        id = objectid.name
         commit = @repo.find(id, :commit)
         return nil if commit.nil?
         Gollum::Git::Commit.new(commit)
