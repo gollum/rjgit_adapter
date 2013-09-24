@@ -243,7 +243,7 @@ module Gollum
       end
       
       def self.init_bare(path, git_options = {}, repo_options = {})
-        RJGit::Repo.init_bare(path, git_options, repo_options)
+        RJGit::Repo.create(path, {:is_bare => true})
         self.new(path, {:is_bare => true})
       end
       
