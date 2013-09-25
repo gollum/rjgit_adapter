@@ -73,6 +73,7 @@ module Gollum
     end
     
     class Commit
+      attr_reader :commit
       
       def initialize(commit)
         @commit = commit
@@ -131,7 +132,7 @@ module Gollum
       
       # git.checkout({}, 'HEAD', '--', path)
       def checkout(options={}, *args, &block)
-        @git.checkout(options, *args, &block)
+        @git.checkout(args.first, options)
       end
       
       def rev_list(options, *refs)
@@ -192,7 +193,8 @@ module Gollum
       
       # index.commit(@options[:message], parents, actor, nil, @wiki.ref)
       def commit(message, parents = nil, actor = nil, last_tree = nil, head = nil)
-        actor = actor ? actor.actor : Gollum::Git::Actor.new("Gollum", "gollum@wiki")
+        actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
+        parents.map!{|parent| parent.commit} if parents
         @index.commit(message, actor, parents, head)
       end
       
@@ -238,7 +240,7 @@ module Gollum
       end
       
       def self.init(path, git_options = {}, repo_options = {})
-        RJGit::Repo.init(path, git_options, repo_options)
+        RJGit::Repo.create(path, {:is_bare => false})
         self.new(path, {:is_bare => false})
       end
       
