@@ -26,11 +26,13 @@ module Gollum
       
       attr_reader :size
       
+      # Gollum::Git::Blob.create(repo, :id => @sha, :name => name, :size => @size, :mode => @mode)
       def self.create(repo, options)
-        jblob = repo.find(options[:id], :blob).jblob
+        blob = repo.find(options[:id], :blob)
+        jblob = blob.jblob unless blob.nil?
         return nil if jblob.nil?
-        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:path], jblob))
-        blob.set_size(options[:size])
+        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:name], jblob))
+        blob.set_size(options[:size]) if options[:size]
         return blob
       end
       
@@ -135,21 +137,16 @@ module Gollum
         @git.checkout(args.first, options)
       end
       
+      # rev_list({:max_count=>1}, ref)
       def rev_list(options, *refs)
-        @git.rev_list(options, *refs)
-      rescue 
-        raise Gollum::Git::NoSuchShaFound
+        raise "Not implemented"
       end
       
       def ls_files(options={}, *args, &block)
         @git.ls_files(options, *args, &block)
       end
       
-      def ls_tree(options={}, *args, &block)
-        @git.native(:ls_tree, options, *args, &block)
-        #         {:r => true, :l => true, :z => true}, sha)
-      end
-      
+  
       def apply_patch(options={}, head_sha=nil, patch=nil)
         @git.apply_patch(options, head_sha, patch)
       end
@@ -290,6 +287,16 @@ module Gollum
       
       def log(commit = 'master', path = nil, options = {})
         @repo.log(commit, path, options)
+      end
+      
+      def lstree(sha, options={})
+        # path = ::File.dirname(@repo.jrepo.get_directory.get_path)
+        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, nil, {:recursive => options[:recursive]})
+        entries.map! do |entry| 
+          entry[:mode] = entry[:mode].to_s
+          entry[:sha]  = entry[:id]
+          entry
+        end
       end
       
       def path
