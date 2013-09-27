@@ -31,7 +31,7 @@ module Gollum
         blob = repo.find(options[:id], :blob)
         jblob = blob.jblob unless blob.nil?
         return nil if jblob.nil?
-        blob = Blob.new(RJGit::Blob.new(repo, options[:mode], options[:name], jblob))
+        blob = Blob.new(RJGit::Blob.new(repo.repo, options[:mode], options[:name], jblob))
         blob.set_size(options[:size]) if options[:size]
         return blob
       end
@@ -66,12 +66,16 @@ module Gollum
       end
       
       def is_symlink
-        @blob.is_symlink
+        @blob.mode == 0120000
       end
 
       def symlink_target(base_path = nil)
-        @blob.symlink_target(base_path)
+        target = @blob.name
+        new_path = ::File.expand_path(File.join('..', target), base_path)
+        return new_path if ::File.file? new_path
+        nil
       end
+      
     end
     
     class Commit
@@ -232,6 +236,8 @@ module Gollum
     
     class Repo
       
+      attr_reader :repo
+      
       def initialize(path, options)
         @repo = RJGit::Repo.new(path, options)
       end
@@ -333,25 +339,5 @@ module Gollum
     class NoSuchShaFound < StandardError
     end
     
-  end
-end
-
-# Monkey patching Grit's Blob class (taken from grit_ext.rb)
-module Grit
-  class Blob
-    def is_symlink
-      self.mode == 0120000
-    end
-
-    def symlink_target(base_path = nil)
-      target = self.data
-      new_path = File.expand_path(File.join('..', target), base_path)
-
-      if File.file? new_path
-        return new_path
-      end
-    end
-
-    nil
   end
 end
