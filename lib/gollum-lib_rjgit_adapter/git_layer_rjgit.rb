@@ -160,10 +160,6 @@ module Gollum
         @git.cat_file(options, sha)
       end
       
-      def diff(*args)
-        @git.native(:diff, *args)
-      end
-      
       def log(options = {}, *args, &block)
         @git.native(:log, options, *args, &block)
       end
@@ -233,6 +229,15 @@ module Gollum
       end
             
     end
+
+    class Diff
+      def initialize(diff_entry)
+
+      end
+      def diff
+
+      end
+    end
     
     class Repo
       
@@ -293,6 +298,10 @@ module Gollum
       
       def log(commit = 'master', path = nil, options = {})
         @repo.log(commit, path, options)
+      end
+
+      def diff(sha1, sha2, path)
+        RJGit::Porcelain.diff(repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true})
       end
       
       def lstree(sha, options={})
