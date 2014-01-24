@@ -31,7 +31,7 @@ module Gollum
         blob = repo.find(options[:id], :blob)
         jblob = blob.jblob unless blob.nil?
         return nil if jblob.nil?
-        blob = Blob.new(RJGit::Blob.new(repo.repo, options[:mode], options[:name], jblob))
+        blob = self.new(RJGit::Blob.new(repo.repo, options[:mode], options[:name], jblob))
         blob.set_size(options[:size]) if options[:size]
         return blob
       end
@@ -66,11 +66,11 @@ module Gollum
       end
       
       def is_symlink
-        @blob.mode == 0120000
+        @blob.is_symlink?
       end
 
       def symlink_target(base_path = nil)
-        target = @blob.name
+        target = @blob.data
         new_path = ::File.expand_path(File.join('..', target), base_path)
         return new_path if ::File.file? new_path
         nil
