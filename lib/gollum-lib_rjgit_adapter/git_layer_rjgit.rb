@@ -107,11 +107,6 @@ module Gollum
         Gollum::Git::Tree.new(@commit.tree)
       end
       
-      # Grit::Commit.list_from_string(@wiki.repo, log)
-      def self.list_from_string(repo, log)
-        RJGit::Commit.list_from_string(repo, log)
-      end
-      
     end
     
     # Note that in Grit, the methods grep, rm, checkout, ls_files
@@ -160,9 +155,10 @@ module Gollum
         @git.cat_file(options, sha)
       end
       
-      def log(options = {}, *args, &block)
-        @git.native(:log, options, *args, &block)
+      def log(path = nil, ref = nil, options = nil)
+        @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
+      alias_method :versions_for_path, :log
       
       def refs(options, prefix)
         @git.refs(options, prefix)
@@ -297,11 +293,7 @@ module Gollum
       end
       
       def log(commit = 'master', path = nil, options = {})
-        @repo.log(commit, path, options)
-      end
-
-      def diff(sha1, sha2, path)
-        RJGit::Porcelain.diff(repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true})
+        @git.log(path, commit, options)
       end
       
       def lstree(sha, options={})
@@ -320,6 +312,10 @@ module Gollum
       
       def update_ref(head, commit_sha)
         @repo.update_ref(head, commit_sha)
+      end
+
+      def diff(sha1, sha2, path)
+        RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true})
       end
      
     end
