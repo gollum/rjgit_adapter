@@ -133,7 +133,9 @@ module Gollum
       
       # git.checkout({}, 'HEAD', '--', path)
       def checkout(options={}, *args, &block)
-        @git.checkout(args.first, options)
+        options[:commit] = args[0]
+        options[:paths] = [args[2]]
+        @git.checkout("master", options)
       end
       
       # rev_list({:max_count=>1}, ref)
@@ -239,18 +241,18 @@ module Gollum
       
       attr_reader :repo
       
-      def initialize(path, options)
+      def initialize(path, options = {})
         @repo = RJGit::Repo.new(path, options)
       end
       
       def self.init(path, git_options = {}, repo_options = {})
         RJGit::Repo.create(path, {:is_bare => false})
-        self.new(path, {:is_bare => false})
+        #self.new(path, {:is_bare => false})
       end
       
       def self.init_bare(path, git_options = {}, repo_options = {})
         RJGit::Repo.create(path, {:is_bare => true})
-        self.new(path, {:is_bare => true})
+        #self.new(path, {:is_bare => true})
       end
       
       def bare
@@ -297,8 +299,7 @@ module Gollum
       end
       
       def lstree(sha, options={})
-        # path = ::File.dirname(@repo.jrepo.get_directory.get_path)
-        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, nil, {:recursive => options[:recursive]})
+        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, @repo.find(sha, :tree), {:recursive => options[:recursive]})
         entries.map! do |entry| 
           entry[:mode] = entry[:mode].to_s
           entry[:sha]  = entry[:id]
@@ -330,7 +331,6 @@ module Gollum
         @tree.id
       end
       
-      # if index.current_tree && tree = index.current_tree / (@wiki.page_file_dir || '/')
       def /(file)
         @tree.send(:/, file) 
       end
