@@ -160,12 +160,9 @@ module Gollum
       def ls_files(query, options = {})
         ref = options[:ref] ? options[:ref] : "HEAD"
         result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && object[:path].split("/").last.scan(/#{query}/i) }
-        puts "\nRESULT" + result.inspect + "\n"
-        result.map! do |r|
+        result.map do |r|
           r[:path]
         end
-        puts "\nRESULT AFTER" + result.inspect + "\n"
-        result
       end
         
       def apply_patch(options={}, head_sha=nil, patch=nil)
