@@ -4,6 +4,9 @@ require 'rjgit'
 
 module Gollum
   module Git
+
+    import 'org.eclipse.jgit.revwalk.RevWalk'
+    import 'org.eclipse.jgit.lib.ObjectId'
     
     class Actor
       
@@ -122,8 +125,19 @@ module Gollum
         @git.exist?
       end
       
-      def grep(options={}, *args, &block)
-        @git.grep(options, *args, &block)
+      def grep(query, options={})
+        ref = options[:ref] ? options[:ref] : "HEAD"
+        blobs = []
+        RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).each do |item|
+          walk = RevWalk.new(@git.jrepo)
+          blobs << RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id]))) if item[:type] == 'blob'
+        end
+        result = []
+        blobs.each do |blob|
+          count = blob.data.downcase.scan(/#{query}/i).length
+          result << {:name => blob.path, :count => count} if count > 0
+        end
+        result
       end
       
       # git.rm({'f' => true}, '--', path)
@@ -143,11 +157,17 @@ module Gollum
         raise "Not implemented"
       end
       
-      def ls_files(options={}, *args, &block)
-        @git.ls_files(options, *args, &block)
+      def ls_files(query, options = {})
+        ref = options[:ref] ? options[:ref] : "HEAD"
+        result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && object[:path].split("/").last.scan(/#{query}/i) }
+        puts "\nRESULT" + result.inspect + "\n"
+        result.map! do |r|
+          r[:path]
+        end
+        puts "\nRESULT AFTER" + result.inspect + "\n"
+        result
       end
-      
-  
+        
       def apply_patch(options={}, head_sha=nil, patch=nil)
         @git.apply_patch(options, head_sha, patch)
       end
@@ -169,9 +189,6 @@ module Gollum
     end
     
     class Index
-      
-      import 'org.eclipse.jgit.revwalk.RevWalk'
-      import 'org.eclipse.jgit.lib.ObjectId'
       
       def initialize(index)
         @index = index
@@ -295,7 +312,7 @@ module Gollum
       end
       
       def log(commit = 'master', path = nil, options = {})
-        @git.log(path, commit, options)
+        git.log(path, commit, options)
       end
       
       def lstree(sha, options={})
