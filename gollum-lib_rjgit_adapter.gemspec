@@ -5,7 +5,7 @@ require "gollum-lib_rjgit_adapter/version"
 Gem::Specification.new do |s|
   s.name        = "gollum-lib_rjgit_adapter"
   s.version     = Gollum::Lib::Git::VERSION
-  s.platform    = Gem::Platform::JRUBY
+  s.platform    = "java"
   s.authors     = ["Bart Kamphorst, Dawa Ometto"]
   s.email       = ["repotag-dev@googlegroups.com"]
   s.homepage    = "https://github.com/repotag/gollum-lib_rjgit_adapter"
