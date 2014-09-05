@@ -74,7 +74,7 @@ module Gollum
 
       def symlink_target(base_path = nil)
         target = @blob.data
-        new_path = ::File.expand_path(File.join('..', target), base_path)
+        new_path = ::File.expand_path(::File.join('..', target), base_path)
         return new_path if ::File.file? new_path
         nil
       end
@@ -149,11 +149,9 @@ module Gollum
         @git.rm(options, *args, &block)
       end
       
-      # git.checkout({}, 'HEAD', '--', path)
-      def checkout(options={}, *args, &block)
-        options[:commit] = args[0]
-        options[:paths] = [args[2]]
-        @git.checkout("master", options)
+      def checkout(path, ref, options = {}, &block)
+        options[:paths] = [path]
+        @git.checkout(ref, options)
       end
       
       # rev_list({:max_count=>1}, ref)
@@ -265,12 +263,12 @@ module Gollum
       
       def self.init(path, git_options = {}, repo_options = {})
         RJGit::Repo.create(path, {:is_bare => false})
-        #self.new(path, {:is_bare => false})
+        self.new(path, {:is_bare => false})
       end
       
       def self.init_bare(path, git_options = {}, repo_options = {})
         RJGit::Repo.create(path, {:is_bare => true})
-        #self.new(path, {:is_bare => true})
+        self.new(path, {:is_bare => true})
       end
       
       def bare
@@ -319,7 +317,7 @@ module Gollum
       def lstree(sha, options={})
         entries = RJGit::Porcelain.ls_tree(@repo.jrepo, @repo.find(sha, :tree), {:recursive => options[:recursive]})
         entries.map! do |entry| 
-          entry[:mode] = entry[:mode].to_s
+          entry[:mode] = entry[:mode].to_s(8)
           entry[:sha]  = entry[:id]
           entry
         end
