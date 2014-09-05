@@ -292,6 +292,8 @@ module Gollum
         commit = @repo.find(id, :commit)
         return nil if commit.nil?
         Gollum::Git::Commit.new(commit)
+        rescue Java::OrgEclipseJgitErrors::RevisionSyntaxException
+          raise Gollum::Git::NoSuchShaFound
       end
       
       def commits(start = 'master', max_count = 10, skip = 0)
