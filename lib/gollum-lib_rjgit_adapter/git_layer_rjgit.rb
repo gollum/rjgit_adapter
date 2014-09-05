@@ -206,7 +206,9 @@ module Gollum
       def commit(message, parents = nil, actor = nil, last_tree = nil, head = nil)
         actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
         parents.map!{|parent| parent.commit} if parents
-        @index.commit(message, actor, parents, head)
+        commit_data = @index.commit(message, actor, parents, head)
+        sha = commit_data[2]
+        sha
       end
       
       def tree
