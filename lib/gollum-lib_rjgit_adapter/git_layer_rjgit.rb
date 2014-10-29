@@ -92,11 +92,8 @@ module Gollum
         @commit.id
       end
       alias_method :sha, :id
-      
-      def to_s
-        @commit.id
-      end
-      
+      alias_method :to_s, :id
+
       def author
         author = @commit.actor
         Gollum::Git::Actor.new(author.name, author.email)
@@ -171,7 +168,7 @@ module Gollum
       #   @git.apply_patch(options, head_sha, patch)
       # end
       
-      def apply_patch(sha, patch)
+      def apply_patch(sha, patch = nil, options = {})
         @git.apply_patch(patch)
       end
       
@@ -220,9 +217,10 @@ module Gollum
       end
       
       def read_tree(id)
+
         walk = RevWalk.new(@index.jrepo)
           #begin
-        @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(ObjectId.from_string(id)))
+        @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(@index.jrepo.resolve("#{id}^{tree}")))
         #rescue
         #raise Gollum::Git::NoSuchShaFound
         #end
@@ -252,7 +250,7 @@ module Gollum
 
     class Diff
       def initialize(diff)
-        @diff = diff
+        @diff = diff[:patch]
       end
       def diff
         @diff
@@ -340,7 +338,7 @@ module Gollum
       end
 
       def diff(sha1, sha2, path = nil)
-        [Diff.new(RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true}))]
+        RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true}).map {|d| Diff.new(d)}
       end
      
     end
