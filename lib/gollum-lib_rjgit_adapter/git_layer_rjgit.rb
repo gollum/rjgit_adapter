@@ -167,8 +167,12 @@ module Gollum
         end
       end
         
-      def apply_patch(options={}, head_sha=nil, patch=nil)
-        @git.apply_patch(options, head_sha, patch)
+      # def apply_patch(options={}, head_sha=nil, patch=nil)
+      #   @git.apply_patch(options, head_sha, patch)
+      # end
+      
+      def apply_patch(sha, patch)
+        @git.apply_patch(patch)
       end
       
       # @repo.git.cat_file({:p => true}, sha)
@@ -247,11 +251,11 @@ module Gollum
     end
 
     class Diff
-      def initialize(diff_entry)
-
+      def initialize(diff)
+        @diff = diff
       end
       def diff
-
+        @diff
       end
     end
     
@@ -336,7 +340,7 @@ module Gollum
       end
 
       def diff(sha1, sha2, path = nil)
-        RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true})
+        [Diff.new(RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true}))]
       end
      
     end
