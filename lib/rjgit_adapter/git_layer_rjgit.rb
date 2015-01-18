@@ -114,9 +114,6 @@ module Gollum
       
     end
     
-    # Note that in Grit, the methods grep, rm, checkout, ls_files
-    # are all passed to native via method_missing. Hence the uniform
-    # method signatures.
     class Git
     
       def initialize(git)
@@ -300,7 +297,7 @@ module Gollum
       end
       
       def commits(start = 'master', max_count = 10, skip = 0)
-        @repo.commits(start, max_count).map{|commit| Gollum::Git::Commit.new(commit)}.reverse
+        @repo.commits(start, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
       end
       
       # Not required by gollum-lib
