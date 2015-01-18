@@ -11,7 +11,7 @@ module Gollum
 
     # Convert HEAD refspec to jgit canonical form
     def self.canonicalize(ref)
-      ref = "refs/heads/master" if ref.nil? || ref.upcase == "HEAD"
+      ref = "master" if ref.nil? || ref.upcase == "HEAD"
       ref
     end
     
@@ -152,6 +152,7 @@ module Gollum
       
       def checkout(path, ref, options = {}, &block)
         ref = Gollum::Git.canonicalize(ref)
+        puts "DEBUG: #{ref.inspect}"
         options[:paths] = [path]
         @git.checkout(ref, options)
       end
