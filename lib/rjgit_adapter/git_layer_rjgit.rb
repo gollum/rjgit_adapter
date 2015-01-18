@@ -8,6 +8,12 @@ module Gollum
 
     import 'org.eclipse.jgit.revwalk.RevWalk'
     import 'org.eclipse.jgit.lib.ObjectId'
+
+    # Convert HEAD refspec to jgit canonical form
+    def self.canonicalize(ref)
+      ref = "refs/heads/master" if ref.nil? || ref.upcase == "HEAD"
+      ref
+    end
     
     class Actor
       
@@ -125,7 +131,7 @@ module Gollum
       end
       
       def grep(query, options={})
-        ref = options[:ref] ? options[:ref] : "HEAD"
+        ref = Gollum::Git.canonicalize(options[:ref])
         blobs = []
         RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).each do |item|
           walk = RevWalk.new(@git.jrepo)
@@ -145,6 +151,7 @@ module Gollum
       end
       
       def checkout(path, ref, options = {}, &block)
+        ref = Gollum::Git.canonicalize(ref)
         options[:paths] = [path]
         @git.checkout(ref, options)
       end
@@ -155,16 +162,12 @@ module Gollum
       end
       
       def ls_files(query, options = {})
-        ref = options[:ref] ? options[:ref] : "HEAD"
+        ref = Gollum::Git.canonicalize(options[:ref])
         result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && object[:path].split("/").last.scan(/#{query}/i) }
         result.map do |r|
           r[:path]
         end
       end
-        
-      # def apply_patch(options={}, head_sha=nil, patch=nil)
-      #   @git.apply_patch(options, head_sha, patch)
-      # end
       
       def apply_patch(sha, patch = nil, options = {})
         @git.apply_patch(patch)
@@ -176,6 +179,7 @@ module Gollum
       end
       
       def log(path = nil, ref = nil, options = nil)
+        ref = Gollum::Git.canonicalize(ref)
         @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
       alias_method :versions_for_path, :log
@@ -286,6 +290,7 @@ module Gollum
       end
       
       def commit(ref)
+        ref = Gollum::Git.canonicalize(ref)
         objectid = @repo.jrepo.resolve(ref)
         return nil if objectid.nil?
         id = objectid.name
@@ -296,8 +301,9 @@ module Gollum
           raise Gollum::Git::NoSuchShaFound
       end
       
-      def commits(start = 'master', max_count = 10, skip = 0)
-        @repo.commits(start, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
+      def commits(ref = 'refs/heads/master', max_count = 10, skip = 0)
+        ref = Gollum::Git.canonicalize(ref)
+        @repo.commits(ref, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
       end
       
       # Not required by gollum-lib
@@ -314,7 +320,8 @@ module Gollum
         @index ||= Gollum::Git::Index.new(RJGit::Plumbing::Index.new(@repo))
       end
       
-      def log(commit = 'master', path = nil, options = {})
+      def log(commit = 'refs/heads/master', path = nil, options = {})
+        commit = Gollum::Git.canonicalize(commit)
         git.log(path, commit, options)
       end
       
@@ -332,6 +339,7 @@ module Gollum
       end
       
       def update_ref(head, commit_sha)
+        head = Gollum::Git.canonicalize(head)
         @repo.update_ref(head, commit_sha)
       end
 
