@@ -4,7 +4,7 @@ task :default => :rspec
 
 desc "Build the gem file."
 task :build do
-  system "gem build gollum-lib_rjgit_adapter.gemspec"
+  system "gem build gollum-rjgit_adapter.gemspec"
 end
 
 require 'rspec/core/rake_task'
