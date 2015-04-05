@@ -158,7 +158,6 @@ module Gollum
       
       def checkout(path, ref, options = {}, &block)
         ref = Gollum::Git.canonicalize(ref)
-        puts "DEBUG: #{ref.inspect}"
         options[:paths] = [path]
         @git.checkout(ref, options)
       end
