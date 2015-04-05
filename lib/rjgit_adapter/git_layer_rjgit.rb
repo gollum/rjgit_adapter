@@ -4,6 +4,12 @@ require 'rjgit'
 
 module Gollum
 
+  def self.set_git_timeout(time)
+  end
+
+  def self.set_git_max_filesize(size)
+  end
+
   module Git
 
     import 'org.eclipse.jgit.revwalk.RevWalk'
