@@ -1,6 +1,7 @@
 # ~*~ encoding: utf-8 ~*~
 
 require 'rjgit'
+require 'ostruct'
 
 module Gollum
 
@@ -123,6 +124,14 @@ module Gollum
       def tree
         Gollum::Git::Tree.new(@commit.tree)
       end
+
+      def stats
+        return @stats unless @stats.nil?
+        rjgit_stats = @commit.stats
+        additions = rjgit_stats[0]
+        deletions = rjgit_stats[1]
+        @stats = OpenStruct.new(:additions => additions, :deletions => deletions, :files => rjgit_stats[2].to_a.map {|a| a.flatten}, :id => id, :total => additions + deletions)
+      end
       
     end
     
@@ -193,6 +202,14 @@ module Gollum
       def refs(options, prefix)
         @git.refs(options, prefix)
       end
+
+      def push(remote, branch, options = {})
+        @git.push(remote, [branch].flatten, options)
+      end
+
+      def pull(remote, branch, options = {})
+        @git.pull(remote, [branch].flatten, options)
+      end
       
     end
     
@@ -258,10 +275,10 @@ module Gollum
 
     class Diff
       def initialize(diff)
-        @diff = diff[:patch]
+        @diff = diff
       end
       def diff
-        @diff
+        @diff[:patch]
       end
     end
     
