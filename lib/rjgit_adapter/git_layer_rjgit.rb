@@ -18,6 +18,7 @@ module Gollum
 
     # Convert HEAD refspec to jgit canonical form
     def self.canonicalize(ref)
+      ref = ref.name if ref.is_a?(Gollum::Git::Ref)
       ref = "master" if ref.nil? || ref.upcase == "HEAD"
       ref
     end
@@ -142,7 +143,7 @@ module Gollum
       end
       
       def exist?
-        @git.exist?
+        ::File.exists?(@git.jrepo.getDirectory.to_s)
       end
       
       def grep(query, options={})
@@ -168,7 +169,7 @@ module Gollum
       def checkout(path, ref, options = {}, &block)
         ref = Gollum::Git.canonicalize(ref)
         options[:paths] = [path]
-        @git.checkout(ref, options)
+        @git.checkout(ref, options.merge({:force => true}))
       end
       
       # rev_list({:max_count=>1}, ref)
@@ -324,7 +325,7 @@ module Gollum
           raise Gollum::Git::NoSuchShaFound
       end
       
-      def commits(ref = 'refs/heads/master', max_count = 10, skip = 0)
+      def commits(ref = nil, max_count = 10, skip = 0)
         ref = Gollum::Git.canonicalize(ref)
         @repo.commits(ref, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
       end
@@ -361,9 +362,10 @@ module Gollum
         @repo.path
       end
       
-      def update_ref(head, commit_sha)
-        head = Gollum::Git.canonicalize(head)
-        @repo.update_ref(head, commit_sha)
+      def update_ref(ref = "refs/heads/master", commit_sha)
+        ref = Gollum::Git.canonicalize(head)
+        cm = self.commit(commit_sha)
+        @repo.update_ref(cm, true, ref)
       end
 
       def diff(sha1, sha2, path = nil)
