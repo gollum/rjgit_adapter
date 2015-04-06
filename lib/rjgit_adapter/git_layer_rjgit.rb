@@ -18,8 +18,11 @@ module Gollum
 
     # Convert HEAD refspec to jgit canonical form
     def self.canonicalize(ref)
-      ref = ref.name if ref.is_a?(Gollum::Git::Ref)
-      ref = "master" if ref.nil? || ref.upcase == "HEAD"
+      if ref.is_a?(Gollum::Git::Ref)
+        return ref.name
+      else
+        return "master" if ref.nil? || ref.upcase == "HEAD"
+      end
       ref
     end
     
@@ -166,7 +169,7 @@ module Gollum
         @git.rm(options, *args, &block)
       end
       
-      def checkout(path, ref, options = {}, &block)
+      def checkout(path, ref, options = {})
         ref = Gollum::Git.canonicalize(ref)
         options[:paths] = [path]
         @git.checkout(ref, options.merge({:force => true}))
@@ -246,7 +249,7 @@ module Gollum
       end
       
       def read_tree(tree)
-          tree = tree.id if tree.is_a?(Tree)
+        tree = tree.id if tree.is_a?(Tree)
         begin
           @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, RevWalk.new(@index.jrepo).lookup_tree(@index.jrepo.resolve("#{tree}^{tree}")))
         rescue
@@ -367,7 +370,7 @@ module Gollum
       def update_ref(ref = "refs/heads/master", commit_sha)
         ref = Gollum::Git.canonicalize(head)
         cm = self.commit(commit_sha)
-        @repo.update_ref(cm, true, ref)
+        @repo.update_ref(cm.commit, true, ref)
       end
 
       def diff(sha1, sha2, path = nil)
