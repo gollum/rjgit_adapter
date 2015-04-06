@@ -185,7 +185,9 @@ module Gollum
       end
       
       def apply_patch(sha, patch = nil, options = {})
+        return false if patch.nil?
         @git.apply_patch(patch)
+        Tree.new(RJGit::Tree.new(@git.jrepo, nil, nil, RevWalk.new(@git.jrepo).lookup_tree(@git.jrepo.resolve("HEAD^{tree}"))))
       end
       
       # @repo.git.cat_file({:p => true}, sha)
@@ -233,6 +235,7 @@ module Gollum
         actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
         parents.map!{|parent| parent.commit} if parents
         commit_data = @index.commit(message, actor, parents, head)
+        return false if !commit_data
         sha = commit_data[2]
         sha
       end
@@ -241,14 +244,13 @@ module Gollum
         @index.treemap
       end
       
-      def read_tree(id)
-
-        walk = RevWalk.new(@index.jrepo)
-          #begin
-        @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, walk.lookup_tree(@index.jrepo.resolve("#{id}^{tree}")))
-        #rescue
-        #raise Gollum::Git::NoSuchShaFound
-        #end
+      def read_tree(tree)
+          tree = tree.id if tree.is_a?(Tree)
+        begin
+          @index.current_tree = RJGit::Tree.new(@index.jrepo, nil, nil, RevWalk.new(@index.jrepo).lookup_tree(@index.jrepo.resolve("#{tree}^{tree}")))
+        rescue
+          raise Gollum::Git::NoSuchShaFound
+        end
         @current_tree = Gollum::Git::Tree.new(@index.current_tree)
       end
       
