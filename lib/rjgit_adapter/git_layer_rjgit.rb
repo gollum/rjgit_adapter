@@ -18,12 +18,15 @@ module Gollum
 
     # Convert HEAD refspec to jgit canonical form
     def self.canonicalize(ref)
-      if ref.is_a?(Gollum::Git::Ref)
-        return ref.name
-      else
-        return "master" if ref.nil? || ref.upcase == "HEAD"
-      end
-      ref
+      return ref if sha?(ref)
+      return "refs/heads/master" if ref.nil? || ref.to_s.upcase == "HEAD"
+      result = ref.is_a?(Gollum::Git::Ref) ? ref.name : ref
+      result = "refs/heads/#{result}" unless result =~ /^refs\/heads\//
+      result
+    end
+
+    def self.sha?(str)
+      !!(str =~ /^[0-9a-f]{40}$/)
     end
     
     class Actor
@@ -213,8 +216,8 @@ module Gollum
         @git.push(remote, [branch].flatten, options)
       end
 
-      def pull(remote, branch, options = {})
-        @git.pull(remote, [branch].flatten, options)
+      def pull(remote, branch = nil, options = {})
+        @git.pull(remote, branch, options)
       end
       
     end
@@ -234,14 +237,13 @@ module Gollum
         @index.add(path, data)
       end
       
-      # index.commit(@options[:message], parents, actor, nil, @wiki.ref)
-      def commit(message, parents = nil, actor = nil, last_tree = nil, head = nil)
+      def commit(message, parents = nil, actor = nil, last_tree = nil, ref = "refs/heads/master")
+        ref = Gollum::Git.canonicalize(ref)
         actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
         parents.map!{|parent| parent.commit} if parents
-        commit_data = @index.commit(message, actor, parents, head)
+        commit_data = @index.commit(message, actor, parents, ref)
         return false if !commit_data
-        sha = commit_data[2]
-        sha
+        commit_data[2]
       end
       
       def tree
