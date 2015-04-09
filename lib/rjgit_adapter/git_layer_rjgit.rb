@@ -167,15 +167,16 @@ module Gollum
         result
       end
       
-      # git.rm({'f' => true}, '--', path)
-      def rm(options={}, *args, &block)
-        @git.rm(options, *args, &block)
+      def rm(path, options={})
+        @git.remove(path)
       end
       
       def checkout(path, ref, options = {})
         ref = Gollum::Git.canonicalize(ref)
         options[:paths] = [path]
-        @git.checkout(ref, options.merge({:force => true}))
+        options[:force] = true
+        options[:commit] = "#{ref}^{commit}"
+        @git.checkout(ref, options)
       end
       
       # rev_list({:max_count=>1}, ref)
