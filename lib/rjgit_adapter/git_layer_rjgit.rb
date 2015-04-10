@@ -203,7 +203,7 @@ module Gollum
         @git.cat_file(options, sha)
       end
       
-      def log(path = nil, ref = nil, options = nil)
+      def log(path = nil, ref = nil, options = {})
         ref = Gollum::Git.canonicalize(ref)
         @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
@@ -284,10 +284,10 @@ module Gollum
 
     class Diff
       def initialize(diff)
-        @diff = diff
+        @diff = diff[:patch].split("\n")[2..-1].join("\n")
       end
       def diff
-        @diff[:patch]
+        @diff
       end
     end
     
@@ -377,7 +377,7 @@ module Gollum
       end
 
       def diff(sha1, sha2, path = nil)
-        RJGit::Porcelain.diff(@repo, {:old_rev => sha2, :new_rev => sha1, :file_path => path, :patch => true}).map {|d| Diff.new(d)}
+        RJGit::Porcelain.diff(@repo, {:old_rev => sha1, :new_rev => sha2, :file_path => path, :patch => true}).map {|d| Diff.new(d)}
       end
      
     end
