@@ -194,7 +194,11 @@ module Gollum
       
       def apply_patch(sha, patch = nil, options = {})
         return false if patch.nil?
-        @git.apply_patch(patch)
+        begin
+          @git.apply_patch(patch)
+        rescue Java::OrgEclipseJgitApiErrors::PatchApplyException
+          false
+        end
         Tree.new(RJGit::Tree.new(@git.jrepo, nil, nil, RevWalk.new(@git.jrepo).lookup_tree(@git.jrepo.resolve("HEAD^{tree}"))))
       end
       
