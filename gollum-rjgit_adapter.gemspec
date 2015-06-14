@@ -17,5 +17,17 @@ Gem::Specification.new do |s|
 
   s.files         = Dir['lib/**/*.rb'] + ["README.md", "Gemfile"]
   s.require_paths = ["lib"]
-end
 
+  # = MANIFEST =
+  s.files = %w(
+    Gemfile
+    LICENSE
+    README.md
+    Rakefile
+    gollum-rjgit_adapter.gemspec
+    lib/rjgit_adapter.rb
+    lib/rjgit_adapter/git_layer_rjgit.rb
+    lib/rjgit_adapter/version.rb
+  )
+  # = MANIFEST =
+end
