@@ -186,7 +186,7 @@ module Gollum
       
       def ls_files(query, options = {})
         ref = Gollum::Git.canonicalize(options[:ref])
-        result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && object[:path].split("/").last.scan(/#{query}/i) }
+        result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && !!(::File.basename(object[:path]) =~ /#{query}/i) }
         result.map do |r|
           r[:path]
         end
