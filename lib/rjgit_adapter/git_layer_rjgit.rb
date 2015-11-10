@@ -245,7 +245,7 @@ module Gollum
       def commit(message, parents = nil, actor = nil, last_tree = nil, ref = "refs/heads/master")
         ref = Gollum::Git.canonicalize(ref)
         actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
-        parents.map!{|parent| parent.commit} if parents
+        parents = parents.map{|parent| parent.commit} if parents
         commit_data = @index.commit(message, actor, parents, ref)
         return false if !commit_data
         commit_data[2]
