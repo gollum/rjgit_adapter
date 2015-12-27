@@ -12,8 +12,8 @@ Gem::Specification.new do |s|
   s.summary     = %q{Adapter for Gollum to use RJGit at the backend.}
   s.description = %q{Adapter for Gollum to use RJGit at the backend.}
 
-  s.add_runtime_dependency "rjgit", "~> 4.0"
-  s.add_development_dependency "rspec", "2.13.0"
+  s.add_runtime_dependency "rjgit", "~> 4.1"
+  s.add_development_dependency "rspec", "3.4.0"
 
   s.files         = Dir['lib/**/*.rb'] + ["README.md", "Gemfile"]
   s.require_paths = ["lib"]
