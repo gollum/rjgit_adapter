@@ -155,7 +155,7 @@ module Gollum
       def grep(query, options={})
         ref = Gollum::Git.canonicalize(options[:ref])
         blobs = []
-        RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).each do |item|
+        RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).each do |item|
           walk = RevWalk.new(@git.jrepo)
           blobs << RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id]))) if item[:type] == 'blob'
         end
@@ -186,7 +186,7 @@ module Gollum
       
       def ls_files(query, options = {})
         ref = Gollum::Git.canonicalize(options[:ref])
-        result = RJGit::Porcelain.ls_tree(@git.jrepo, nil, {:ref => ref, :recursive => true, :file_path => options[:path]}).select {|object| object[:type] == "blob" && !!(::File.basename(object[:path]) =~ /#{query}/i) }
+        result = RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).select {|object| object[:type] == "blob" && !!(::File.basename(object[:path]) =~ /#{query}/i) }
         result.map do |r|
           r[:path]
         end
@@ -362,7 +362,7 @@ module Gollum
       end
       
       def lstree(sha, options={})
-        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, @repo.find(sha, :tree), {:recursive => options[:recursive]})
+        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, nil, @repo.find(sha, :tree), {:recursive => options[:recursive]})
         entries.map! do |entry| 
           entry[:mode] = entry[:mode].to_s(8)
           entry[:sha]  = entry[:id]
@@ -385,7 +385,7 @@ module Gollum
       end
      
     end
-    
+
     class Tree
       
       def initialize(tree)
@@ -397,7 +397,7 @@ module Gollum
       end
       
       def /(file)
-        @tree.send(:/, file) 
+        @tree.send(:/, file)
       end
       
       def blobs
