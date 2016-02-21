@@ -77,7 +77,6 @@ task :release => :build do
   sh "git tag v#{version}"
   sh "git push origin master"
   sh "git push origin v#{version}"
-  sh "gem push pkg/#{name}-#{version}.gem"
   sh "gem push pkg/#{name}-#{version}-java.gem"
 end
 
