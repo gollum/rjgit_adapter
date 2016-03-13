@@ -179,11 +179,6 @@ module Gollum
         @git.checkout(ref, options)
       end
       
-      # rev_list({:max_count=>1}, ref)
-      def rev_list(options, *refs)
-        raise "Not implemented"
-      end
-      
       def ls_files(query, options = {})
         ref = Gollum::Git.canonicalize(options[:ref])
         result = RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).select {|object| object[:type] == "blob" && !!(::File.basename(object[:path]) =~ /#{query}/i) }
@@ -192,17 +187,19 @@ module Gollum
         end
       end
       
-      def apply_patch(sha, patch = nil, options = {})
-        return false if patch.nil?
+      def revert(path, sha1, sha2, ref = nil)
+        ref = Gollum::Git.canonicalize(ref)  # JGit apply doesn't have an optional command to set the ref, so this won't have an effect.
+        patch = path ?
+          Gollum::Git::Diff.diff(@git.jrepo, sha2, sha1, path).first.diff :
+          Gollum::Git::Diff.diff(@git.jrepo, sha2, sha1).map { |d| d.diff }.join("\n")
         begin
           @git.apply_patch(patch)
         rescue Java::OrgEclipseJgitApiErrors::PatchApplyException
           false
         end
-        Tree.new(RJGit::Tree.new(@git.jrepo, nil, nil, RevWalk.new(@git.jrepo).lookup_tree(@git.jrepo.resolve("HEAD^{tree}"))))
+        Tree.new(RJGit::Tree.new(@git.jrepo, nil, nil, RevWalk.new(@git.jrepo).lookup_tree(@git.jrepo.resolve("#{ref}^{tree}"))))
       end
       
-      # @repo.git.cat_file({:p => true}, sha)
       def cat_file(options, sha)
         @git.cat_file(options, sha)
       end
@@ -287,9 +284,15 @@ module Gollum
     end
 
     class Diff
+
+      def self.diff(repo, sha1, sha2, path = nil)
+        RJGit::Porcelain.diff(repo, {:old_rev => sha1, :new_rev => sha2, :file_path => path, :patch => true}).map {|d| Diff.new(d)}
+      end
+
       def initialize(diff)
         @diff = diff[:patch].split("\n")[2..-1].join("\n")
       end
+
       def diff
         @diff
       end
@@ -381,7 +384,7 @@ module Gollum
       end
 
       def diff(sha1, sha2, path = nil)
-        RJGit::Porcelain.diff(@repo, {:old_rev => sha1, :new_rev => sha2, :file_path => path, :patch => true}).map {|d| Diff.new(d)}
+        Gollum::Git::Diff.diff(@repo, sha1, sha2, path)
       end
      
     end
