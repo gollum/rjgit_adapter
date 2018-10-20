@@ -161,7 +161,8 @@ module Gollum
         end
         result = []
         blobs.each do |blob|
-          count = blob.data.downcase.scan(/#{query}/i).length
+          next if blob.binary?
+          count = blob.data.scan(/#{query}/i).length
           result << {:name => blob.path, :count => count} if count > 0
         end
         result
