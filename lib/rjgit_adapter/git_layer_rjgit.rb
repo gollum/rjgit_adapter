@@ -350,6 +350,7 @@ module Gollum
       
       # @wiki.repo.head.commit.sha
       def head
+        return nil unless @repo.head
         Gollum::Git::Ref.new("refs/heads/master", @repo.head)
       end
       
