@@ -192,15 +192,24 @@ module Gollum
           r[:path]
         end
       end
-      
-      def apply_patch(sha, patch = nil, options = {})
-        return false if patch.nil?
+
+      def revert_path(path, sha1, sha2)
+        patch = @git.diff
+        return false unless patch
+        if repo.bare?
+
+        else
         begin
           @git.apply_patch(patch)
-        rescue Java::OrgEclipseJgitApiErrors::PatchApplyException
-          false
+        rescue Java::OrgEclipseJgitApiErrors::PatchApplyException, Java::OrgEclipseJgitApiErrors::PatchFormatException, Java::OrgEclipseJgitApiErrors::GitAPIException
+          return false
+        end
         end
         Tree.new(RJGit::Tree.new(@git.jrepo, nil, nil, RevWalk.new(@git.jrepo).lookup_tree(@git.jrepo.resolve("HEAD^{tree}"))))
+      end
+
+      def revert_commit(sha1, sha2)
+        return tree, files
       end
       
       # @repo.git.cat_file({:p => true}, sha)
