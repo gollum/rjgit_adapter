@@ -160,11 +160,14 @@ module Gollum
           blobs << RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id]))) if item[:type] == 'blob'
         end
         result = []
+        regex_query = query.scan(/"([^"]+)"|(\S+)/).flatten.compact.map {|word| Regexp.escape(word)}
+        regex_query = "(?:#{regex_query.join('|')})"
         blobs.each do |blob|
           next if blob.binary?
-          count = blob.data.scan(/#{query}/i).length
-          result << {:name => blob.path, :count => count} if count > 0
+          in_blob = blob.data.scan(/^(.*#{regex_query}.*)$/i).flatten
+          result << {:name => blob.path, :result => in_blob, :line_count => in_blob.length} if in_blob.length > 0
         end
+        puts result.inspect
         result
       end
       
