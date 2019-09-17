@@ -135,9 +135,20 @@ module Gollum
       def stats
         return @stats unless @stats.nil?
         rjgit_stats = @commit.stats
-        additions = rjgit_stats[0]
-        deletions = rjgit_stats[1]
-        @stats = OpenStruct.new(:additions => additions, :deletions => deletions, :files => rjgit_stats[2].to_a.map {|a| a.flatten}, :id => id, :total => additions + deletions)
+
+        files = rjgit_stats[:files].map do |file|
+          file[:new_file] == file[:old_file] if file[:new_file] == '/dev/null' # File is deleted, display only the original, deleted path.
+          file.delete(:old_file) if file[:old_file] == '/dev/null' # New file, don't display /dev/null as its original path.
+          file
+        end
+        
+        @stats = OpenStruct.new(
+          :additions => rjgit_stats[:total_additions],
+          :deletions => rjgit_stats[:total_deletions],
+          :total => rjgit_stats[:total_additions] + rjgit_stats[:total_deletions],
+          :files => files,
+          :id => id
+        )
       end
       
     end
