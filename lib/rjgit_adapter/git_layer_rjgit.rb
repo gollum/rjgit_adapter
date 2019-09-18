@@ -138,7 +138,7 @@ module Gollum
 
         files = rjgit_stats[:files].map do |file|
           file[:new_file] == file[:old_file] if file[:new_file] == '/dev/null' # File is deleted, display only the original, deleted path.
-          file.delete(:old_file) if file[:old_file] == '/dev/null' # New file, don't display /dev/null as its original path.
+          file.delete(:old_file) if (file[:old_file] == '/dev/null') || (file[:old_file] == file[:new_file]) # Don't include an old path when the file is new, or it's a regular update
           file
         end
         
