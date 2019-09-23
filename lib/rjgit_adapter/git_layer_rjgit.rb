@@ -152,23 +152,17 @@ module Gollum
         ::File.exists?(@git.jrepo.getDirectory.to_s)
       end
       
-      def grep(query, options={})
+      def grep(query, options={}, &block)
         ref = Gollum::Git.canonicalize(options[:ref])
-        blobs = []
+        results = []
+        walk = RevWalk.new(@git.jrepo)
         RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).each do |item|
-          walk = RevWalk.new(@git.jrepo)
-          blobs << RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id]))) if item[:type] == 'blob'
+          if item[:type] == 'blob'
+            blob = RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id])))
+            results << yield(blob.path, blob.binary? ? nil : blob.data)
+          end
         end
-        result = []
-        regex_query = query.scan(/"([^"]+)"|(\S+)/).flatten.compact.map {|word| Regexp.escape(word)}
-        regex_query = "(?:#{regex_query.join('|')})"
-        blobs.each do |blob|
-          next if blob.binary?
-          in_blob = blob.data.scan(/^(.*#{regex_query}.*)$/i).flatten
-          result << {:name => blob.path, :result => in_blob, :line_count => in_blob.length} if in_blob.length > 0
-        end
-        puts result.inspect
-        result
+        results.compact
       end
       
       def rm(path, options={})
