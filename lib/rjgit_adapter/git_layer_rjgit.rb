@@ -218,7 +218,8 @@ module Gollum
       
       def log(path = nil, ref = nil, options = {})
         ref = Gollum::Git.canonicalize(ref)
-        @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
+        commits, pathnames = @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
+        path ? [commits, pathnames] : commits
       end
       alias_method :versions_for_path, :log
       
