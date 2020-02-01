@@ -105,9 +105,12 @@ module Gollum
     class Commit
       attr_reader :commit
       
-      def initialize(commit)
+      def initialize(commit, tracked_pathname = nil)
         @commit = commit
+        @tracked_pathname = tracked_pathname
       end
+
+      attr_reader :tracked_pathname
       
       def id
         @commit.id
@@ -130,6 +133,10 @@ module Gollum
       
       def tree
         Gollum::Git::Tree.new(@commit.tree)
+      end
+
+      def tracked_pathname
+        @commit.tracked_pathname
       end
 
       def stats
@@ -218,8 +225,7 @@ module Gollum
       
       def log(path = nil, ref = nil, options = {})
         ref = Gollum::Git.canonicalize(ref)
-        commits, pathnames = @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
-        path ? [commits, pathnames] : commits
+        @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
       alias_method :versions_for_path, :log
       
