@@ -19,7 +19,7 @@ module Gollum
     # Convert HEAD refspec to jgit canonical form
     def self.canonicalize(ref)
       return ref if sha?(ref)
-      return "refs/heads/master" if ref.nil? || ref.to_s.upcase == "HEAD"
+      return 'refs/heads/master' if ref.nil? || ref.to_s.upcase == 'HEAD'
       result = ref.is_a?(Gollum::Git::Ref) ? ref.name : ref
       result = "refs/heads/#{result}" unless result =~ /^refs\/heads\//
       result
@@ -190,30 +190,35 @@ module Gollum
       
       # rev_list({:max_count=>1}, ref)
       def rev_list(options, *refs)
-        raise "Not implemented"
+        raise 'Not implemented'
       end
       
       def ls_files(query, options = {})
         ref = Gollum::Git.canonicalize(options[:ref])
-        result = RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).select {|object| object[:type] == "blob" && !!(::File.basename(object[:path]) =~ /#{query}/i) }
+        result = RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).select {|object| object[:type] == 'blob' && !!(::File.basename(object[:path]) =~ /#{query}/i) }
         result.map do |r|
           r[:path]
         end
       end
-
-      def revert_path(path, sha1, sha2, ref = 'HEAD^{tree}')
+      
+      def revert_path(path, sha1, sha2, ref = 'HEAD^{commit}')
+        result, paths = revert(path, sha1, sha2, ref)
+        result
+      end
+      
+      def revert_commit(sha1, sha2, ref = 'HEAD^{commit}')
+        revert(nil, sha1, sha2, ref)
+      end
+      
+      def revert(path, sha1, sha2, ref)
         patch = generate_patch(sha1, sha2, path)
         return false unless patch
         begin
-          applier = RJGit::Plumbing::ApplyPatchToIndex.new(@repo, patch)
-          applier.build_map
-        rescue Java::OrgEclipseJgitApiErrors::PatchApplyException, Java::OrgEclipseJgitApiErrors::PatchFormatException
-          return false
+          applier = RJGit::Plumbing::ApplyPatchToIndex.new(@git.jrepo, patch, ref)
+          applier.new_tree
+        rescue ::RJGit::PatchApplyException
+          false
         end
-      end
-
-      def revert_commit(sha1, sha2, ref = 'HEAD^{tree}')
-        revert_path(nil, sha1, sha2, ref)
       end
             
       # @repo.git.cat_file({:p => true}, sha)
@@ -240,9 +245,9 @@ module Gollum
       end
       
       private
-      
+            
       def generate_patch(sha1, sha2, path = nil)
-        RJGit::Plumbing::ApplyPatchToIndex.diffs_to_patch(RJGit::Porcelain.diff(@git.jrepo, patch: true, new_rev: sha2, old_rev: sha1, file_path: path))
+        RJGit::Plumbing::ApplyPatchToIndex.diffs_to_patch(RJGit::Porcelain.diff(@git.jrepo, patch: true, new_rev: sha1, old_rev: sha2, file_path: path))
       end
       
     end
@@ -262,9 +267,9 @@ module Gollum
         @index.add(path, data)
       end
       
-      def commit(message, parents = nil, actor = nil, last_tree = nil, ref = "refs/heads/master")
+      def commit(message, parents = nil, actor = nil, last_tree = nil, ref = 'refs/heads/master')
         ref = Gollum::Git.canonicalize(ref)
-        actor = actor ? actor.actor : RJGit::Actor.new("Gollum", "gollum@wiki")
+        actor = actor ? actor.actor : RJGit::Actor.new('Gollum', 'gollum@wiki')
         parents = parents.map{|parent| parent.commit} if parents
         commit_data = @index.commit(message, actor, parents, ref)
         return false if !commit_data
@@ -370,7 +375,7 @@ module Gollum
       # @wiki.repo.head.commit.sha
       def head
         return nil unless @repo.head
-        Gollum::Git::Ref.new("refs/heads/master", @repo.head)
+        Gollum::Git::Ref.new('refs/heads/master', @repo.head)
       end
       
       def index
@@ -395,7 +400,7 @@ module Gollum
         @repo.path
       end
       
-      def update_ref(ref = "refs/heads/master", commit_sha)
+      def update_ref(ref = 'refs/heads/master', commit_sha)
         ref = Gollum::Git.canonicalize(head)
         cm = self.commit(commit_sha)
         @repo.update_ref(cm.commit, true, ref)
