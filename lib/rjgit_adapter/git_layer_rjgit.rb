@@ -227,8 +227,6 @@ module Gollum
       def log(ref = 'refs/heads/master', path = nil, options = {})
         ref = Gollum::Git.canonicalize(ref)
         options[:list_renames] = true if path && options[:follow]
-        puts options.inspect
-        puts path.inspect
         @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
       alias_method :versions_for_path, :log
