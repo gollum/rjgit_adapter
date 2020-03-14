@@ -135,9 +135,20 @@ module Gollum
       def stats
         return @stats unless @stats.nil?
         rjgit_stats = @commit.stats
-        additions = rjgit_stats[0]
-        deletions = rjgit_stats[1]
-        @stats = OpenStruct.new(:additions => additions, :deletions => deletions, :files => rjgit_stats[2].to_a.map {|a| a.flatten}, :id => id, :total => additions + deletions)
+
+        files = rjgit_stats[:files].map do |file|
+          file[:new_file] == file[:old_file] if file[:new_file] == '/dev/null' # File is deleted, display only the original, deleted path.
+          file.delete(:old_file) if (file[:old_file] == '/dev/null') || (file[:old_file] == file[:new_file]) # Don't include an old path when the file is new, or it's a regular update
+          file
+        end
+        
+        @stats = OpenStruct.new(
+          :additions => rjgit_stats[:total_additions],
+          :deletions => rjgit_stats[:total_deletions],
+          :total => rjgit_stats[:total_additions] + rjgit_stats[:total_deletions],
+          :files => files,
+          :id => id
+        )
       end
       
     end
@@ -152,20 +163,17 @@ module Gollum
         ::File.exists?(@git.jrepo.getDirectory.to_s)
       end
       
-      def grep(query, options={})
+      def grep(query, options={}, &block)
         ref = Gollum::Git.canonicalize(options[:ref])
-        blobs = []
+        results = []
+        walk = RevWalk.new(@git.jrepo)
         RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).each do |item|
-          walk = RevWalk.new(@git.jrepo)
-          blobs << RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id]))) if item[:type] == 'blob'
+          if item[:type] == 'blob'
+            blob = RJGit::Blob.new(@git.jrepo, item[:mode], item[:path], walk.lookup_blob(ObjectId.from_string(item[:id])))
+            results << yield(blob.path, blob.binary? ? nil : blob.data)
+          end
         end
-        result = []
-        blobs.each do |blob|
-          next if blob.binary?
-          count = blob.data.scan(/#{query}/i).length
-          result << {:name => blob.path, :count => count} if count > 0
-        end
-        result
+        results.compact
       end
       
       def rm(path, options={})
@@ -359,6 +367,7 @@ module Gollum
       
       # @wiki.repo.head.commit.sha
       def head
+        return nil unless @repo.head
         Gollum::Git::Ref.new("refs/heads/master", @repo.head)
       end
       
