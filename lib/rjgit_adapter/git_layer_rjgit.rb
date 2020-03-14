@@ -210,7 +210,7 @@ module Gollum
       end
       
       def revert_path(path, sha1, sha2, ref = 'HEAD^{commit}')
-        result, paths = revert(path, sha1, sha2, ref)
+        result, _paths = revert(path, sha1, sha2, ref)
         result
       end
       
