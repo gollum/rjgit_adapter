@@ -105,12 +105,9 @@ module Gollum
     class Commit
       attr_reader :commit
       
-      def initialize(commit, tracked_pathname = nil)
+      def initialize(commit)
         @commit = commit
-        @tracked_pathname = tracked_pathname
       end
-
-      attr_reader :tracked_pathname
       
       def id
         @commit.id
@@ -135,10 +132,6 @@ module Gollum
         Gollum::Git::Tree.new(@commit.tree)
       end
 
-      def tracked_pathname
-        @commit.tracked_pathname
-      end
-
       def stats
         return @stats unless @stats.nil?
         rjgit_stats = @commit.stats
@@ -156,6 +149,14 @@ module Gollum
           :files => files,
           :id => id
         )
+      end
+      
+      def tracked_pathname
+        begin
+          @commit.tracked_pathname
+        rescue NoMethodError
+          nil
+        end
       end
       
     end
@@ -223,8 +224,11 @@ module Gollum
         @git.cat_file(options, sha)
       end
       
-      def log(path = nil, ref = nil, options = {})
+      def log(ref = 'refs/heads/master', path = nil, options = {})
         ref = Gollum::Git.canonicalize(ref)
+        options[:list_renames] = true if path && options[:follow]
+        puts options.inspect
+        puts path.inspect
         @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
       alias_method :versions_for_path, :log
@@ -373,9 +377,9 @@ module Gollum
         @index ||= Gollum::Git::Index.new(RJGit::Plumbing::Index.new(@repo))
       end
       
-      def log(commit = 'refs/heads/master', path = nil, options = {})
+      def log(ref = 'refs/heads/master', path = nil, options = {})
         commit = Gollum::Git.canonicalize(commit)
-        git.log(path, commit, options)
+        git.log(ref, path, options)
       end
       
       def lstree(sha, options={})
