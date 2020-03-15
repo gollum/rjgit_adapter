@@ -239,7 +239,10 @@ module Gollum
         options[:list_renames] = true if path && options[:follow]
         @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
-      alias_method :versions_for_path, :log
+      
+      def versions_for_path(path, ref, options)
+        log(ref, path, options)
+      end
       
       def refs(options, prefix)
         @git.refs(options, prefix)
