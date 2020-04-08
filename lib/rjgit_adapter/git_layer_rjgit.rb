@@ -132,6 +132,10 @@ module Gollum
         Gollum::Git::Tree.new(@commit.tree)
       end
 
+      def parent
+        Gollum::Git::Commit.new(@commit.parents.first)
+      end
+
       def stats
         return @stats unless @stats.nil?
         rjgit_stats = @commit.stats
