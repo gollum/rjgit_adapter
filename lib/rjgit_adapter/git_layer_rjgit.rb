@@ -133,7 +133,7 @@ module Gollum
       end
 
       def parent
-        Gollum::Git::Commit.new(@commit.parents.first)
+        @commit.parents.empty? ? nil : Gollum::Git::Commit.new(@commit.parents.first)
       end
 
       def stats
