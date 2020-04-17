@@ -30,13 +30,14 @@ module Gollum
     end
     
     class Actor
-      
-      attr_accessor :name, :email
+
+      attr_accessor :name, :email, :time
       attr_reader :actor
-      
-      def initialize(name, email)
+
+      def initialize(name, email, time = nil)
         @name = name
         @email = email
+        @time = time
         @actor = RJGit::Actor.new(name, email)
       end
       
