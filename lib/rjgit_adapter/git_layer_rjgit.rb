@@ -38,7 +38,7 @@ module Gollum
         @name = name
         @email = email
         @time = time
-        @actor = RJGit::Actor.new(name, email)
+        @actor = RJGit::Actor.new(name, email, time)
       end
       
       def output(time)
