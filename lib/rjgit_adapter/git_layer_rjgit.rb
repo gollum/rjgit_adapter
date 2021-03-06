@@ -16,13 +16,12 @@ module Gollum
     import 'org.eclipse.jgit.revwalk.RevWalk'
     import 'org.eclipse.jgit.lib.ObjectId'
 
-    # Convert HEAD refspec to jgit canonical form
+    # Convert refspec to jgit canonical form
     def self.canonicalize(ref)
       return ref if sha?(ref)
-      return 'refs/heads/master' if ref.nil? || ref.to_s.upcase == 'HEAD'
+      return 'refs/heads/master' if ref.nil?
       result = ref.is_a?(Gollum::Git::Ref) ? ref.name : ref
-      result = "refs/heads/#{result}" unless result =~ /^refs\/heads\//
-      result
+      (result =~ /^refs\/heads\// || result.upcase == 'HEAD') ? result : "refs/heads/#{result}"
     end
 
     def self.sha?(str)
