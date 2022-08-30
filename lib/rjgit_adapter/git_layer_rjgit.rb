@@ -24,6 +24,11 @@ module Gollum
       (result =~ /^refs\/heads\// || result.upcase == 'HEAD') ? result : "refs/heads/#{result}"
     end
 
+    def self.decanonicalize(ref_name)
+      match = /^refs\/heads\/(.*)/.match(ref_name)
+      match ? match[1] : nil
+    end
+
     def self.sha?(str)
       !!(str =~ /^[0-9a-f]{40}$/)
     end
@@ -425,7 +430,16 @@ module Gollum
       def diff(sha1, sha2, path = nil)
         RJGit::Porcelain.diff(@repo, {:old_rev => sha1, :new_rev => sha2, :file_path => path, :patch => true}).inject("") {|result, diff| result << diff[:patch]}
       end
-     
+
+      # Find the first existing branch in an Array of branch names of the form ['main', ...] and return its String name.
+      def find_branch(search_list)
+        search_list.find do |branch_name|
+          @repo.branches.find do |canonical_name|
+            Gollum::Git.decanonicalize(canonical_name) == branch_name
+          end
+        end
+      end
+
     end
 
     class Tree
