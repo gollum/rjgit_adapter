@@ -18,7 +18,7 @@ module Gollum
 
     # Convert refspec to jgit canonical form
     def self.canonicalize(ref)
-      return ref if sha?(ref)
+      return ref if ref.is_a?(String) and sha?(ref)
       return 'refs/heads/master' if ref.nil?
       result = ref.is_a?(Gollum::Git::Ref) ? ref.name : ref
       (result =~ /^refs\/heads\// || result.upcase == 'HEAD') ? result : "refs/heads/#{result}"
