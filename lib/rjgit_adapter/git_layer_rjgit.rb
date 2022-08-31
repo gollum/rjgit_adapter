@@ -15,6 +15,11 @@ module Gollum
 
     import 'org.eclipse.jgit.revwalk.RevWalk'
     import 'org.eclipse.jgit.lib.ObjectId'
+    import org.eclipse.jgit.lib.ConfigConstants
+
+    def self.global_default_branch
+      org.eclipse.jgit.util.SystemReader.getInstance().getUserConfig().getString(ConfigConstants::CONFIG_INIT_SECTION, nil, ConfigConstants::CONFIG_KEY_DEFAULT_BRANCH)
+    end
 
     # Convert refspec to jgit canonical form
     def self.canonicalize(ref)
