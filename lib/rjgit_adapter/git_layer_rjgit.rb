@@ -17,14 +17,29 @@ module Gollum
     import 'org.eclipse.jgit.lib.ObjectId'
     import org.eclipse.jgit.lib.ConfigConstants
 
+    BACKUP_DEFAULT_REF = 'refs/heads/master'
+
+    def self.head_ref_name(repo)
+      r = RJGit.repository_type(repo)
+      begin
+        # Mimic rugged's behavior: if HEAD points at a given ref, but that ref has no commits yet, return nil
+        r.resolve('HEAD') ? r.getFullBranch : nil
+      rescue Java::OrgEclipseJgitApiErrors::RefNotFoundException
+        nil
+      end
+    end
+
     def self.global_default_branch
       org.eclipse.jgit.util.SystemReader.getInstance().getUserConfig().getString(ConfigConstants::CONFIG_INIT_SECTION, nil, ConfigConstants::CONFIG_KEY_DEFAULT_BRANCH)
     end
 
-    # Convert refspec to jgit canonical form
+    def self.default_ref_for_repo(repo)
+      self.head_ref_name(repo) || self.global_default_branch || BACKUP_DEFAULT_REF
+    end
+
+    # Don't touch if ref is a SHA or Git::Ref, otherwise convert it to jgit canonical form
     def self.canonicalize(ref)
       return ref if ref.is_a?(String) and sha?(ref)
-      return 'refs/heads/master' if ref.nil?
       result = ref.is_a?(Gollum::Git::Ref) ? ref.name : ref
       (result =~ /^refs\/heads\// || result.upcase == 'HEAD') ? result : "refs/heads/#{result}"
     end
@@ -186,7 +201,7 @@ module Gollum
       end
       
       def grep(query, options={}, &block)
-        ref = Gollum::Git.canonicalize(options[:ref])
+        ref = options[:ref] ?  Gollum::Git.canonicalize(options[:ref]) : Gollum::Git.default_ref_for_repo(@git.jrepo)
         results = []
         walk = RevWalk.new(@git.jrepo)
         RJGit::Porcelain.ls_tree(@git.jrepo, options[:path], ref, {:recursive => true}).each do |item|
@@ -203,10 +218,13 @@ module Gollum
       end
       
       def checkout(path, ref, options = {})
-        ref = Gollum::Git.canonicalize(ref)
+        options[:commit] = if ref == 'HEAD'
+          "#{Gollum::Git.default_ref_for_repo(@git.jrepo)}"
+        else
+          "#{Gollum::Git.canonicalize(ref)}}"
+        end
         options[:paths] = [path]
         options[:force] = true
-        options[:commit] = "#{ref}^{commit}"
         @git.checkout(ref, options)
       end
       
@@ -223,16 +241,16 @@ module Gollum
         end
       end
       
-      def revert_path(path, sha1, sha2, ref = 'HEAD^{commit}')
+      def revert_path(path, sha1, sha2, ref = Gollum::Git.default_ref_for_repo(@git.jrepo))
         result, _paths = revert(path, sha1, sha2, ref)
         result
       end
       
-      def revert_commit(sha1, sha2, ref = 'HEAD^{commit}')
+      def revert_commit(sha1, sha2, ref = Gollum::Git.default_ref_for_repo(@git.jrepo))
         revert(nil, sha1, sha2, ref)
       end
       
-      def revert(path, sha1, sha2, ref)
+      def revert(path, sha1, sha2, ref = Gollum::Git.default_ref_for_repo(@git.jrepo))
         patch = generate_patch(sha1, sha2, path)
         return false unless patch
         begin
@@ -248,10 +266,9 @@ module Gollum
         @git.cat_file(options, sha)
       end
       
-      def log(ref = 'refs/heads/master', path = nil, options = {})
-        ref = Gollum::Git.canonicalize(ref)
+      def log(ref = Gollum::Git.default_ref_for_repo(@git.jrepo), path = nil, options = {})
         options[:list_renames] = true if path && options[:follow]
-        @git.log(path, ref, options).map {|commit| Gollum::Git::Commit.new(commit)}
+        @git.log(path, Gollum::Git.canonicalize(ref), options).map {|commit| Gollum::Git::Commit.new(commit)}
       end
       
       def versions_for_path(path, ref, options)
@@ -293,11 +310,10 @@ module Gollum
         @index.add(path, data)
       end
       
-      def commit(message, parents = nil, actor = nil, last_tree = nil, ref = 'refs/heads/master')
-        ref = Gollum::Git.canonicalize(ref)
+      def commit(message, parents = nil, actor = nil, last_tree = nil, ref = Gollum::Git.default_ref_for_repo(@index.jrepo))
         actor = actor ? actor.actor : RJGit::Actor.new('Gollum', 'gollum@wiki')
         parents = parents.map{|parent| parent.commit} if parents
-        commit_data = @index.commit(message, actor, parents, ref)
+        commit_data = @index.commit(message, actor, parents, Gollum::Git.canonicalize(ref))
         return false if !commit_data
         commit_data[2]
       end
@@ -323,8 +339,8 @@ module Gollum
     end
     
     class Ref
-      def initialize(name, commit)
-        @name, @commit = name, commit
+      def initialize(commit, name)
+        @commit, @name = commit, name
       end
       
       def name
@@ -377,8 +393,7 @@ module Gollum
       end
       
       def commit(ref)
-        ref = Gollum::Git.canonicalize(ref)
-        objectid = @repo.jrepo.resolve(ref)
+        objectid = @repo.jrepo.resolve(Gollum::Git.canonicalize(ref))
         return nil if objectid.nil?
         id = objectid.name
         commit = @repo.find(id, :commit)
@@ -388,8 +403,7 @@ module Gollum
           raise Gollum::Git::NoSuchShaFound
       end
       
-      def commits(ref = nil, max_count = 10, skip = 0)
-        ref = Gollum::Git.canonicalize(ref)
+      def commits(ref = Gollum::Git.default_ref_for_repo(@repo), max_count = 10, skip = 0)
         @repo.commits(ref, max_count).map{|commit| Gollum::Git::Commit.new(commit)}
       end
       
@@ -401,16 +415,15 @@ module Gollum
       # @wiki.repo.head.commit.sha
       def head
         return nil unless @repo.head
-        Gollum::Git::Ref.new('refs/heads/master', @repo.head)
+        Gollum::Git::Ref.new(@repo.head, Gollum::Git.head_ref_name(@repo))
       end
       
       def index
         @index ||= Gollum::Git::Index.new(RJGit::Plumbing::Index.new(@repo))
       end
       
-      def log(ref = 'refs/heads/master', path = nil, options = {})
-        commit = Gollum::Git.canonicalize(commit)
-        git.log(ref, path, options)
+      def log(ref = Gollum::Git.default_ref_for_repo(@repo), path = nil, options = {})
+        git.log(Gollum::Git.canonicalize(ref), path, options)
       end
       
       def lstree(sha, options={})
@@ -426,10 +439,9 @@ module Gollum
         @repo.path
       end
       
-      def update_ref(ref = 'refs/heads/master', commit_sha)
-        ref = Gollum::Git.canonicalize(head)
+      def update_ref(ref, commit_sha)
         cm = self.commit(commit_sha)
-        @repo.update_ref(cm.commit, true, ref)
+        @repo.update_ref(cm.commit, true, Gollum::Git.canonicalize(ref))
       end
 
       def diff(sha1, sha2, path = nil)
