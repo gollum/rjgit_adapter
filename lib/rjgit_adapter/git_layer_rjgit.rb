@@ -188,6 +188,14 @@ module Gollum
         end
       end
       
+      def note(ref='refs/notes/commits')
+        result = @commit.note(ref)
+        result ? result.to_s : nil
+      end
+
+      def note=(msg, ref='refs/notes/commits')
+        @commit.send(:note=,msg,ref)
+      end
     end
     
     class Git
