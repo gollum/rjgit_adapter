@@ -488,7 +488,8 @@ module Gollum
 
       def find_blob(&block)
         return nil unless block_given?
-        @tree.find_blob(&block)
+        result = @tree.find_blob {|blob| yield blob[:name] }
+        result ? Gollum::Git::Blob.new(blob) : nil
       end
     end
     
