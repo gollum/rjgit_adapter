@@ -478,7 +478,9 @@ module Gollum
       end
       
       def /(file)
-        @tree.send(:/, file)
+        obj = @tree.send(:/, file)
+        return nil if obj.nil?
+        obj.is_a?(RJGit::Tree) ? Gollum::Git::Tree.new(obj) : Gollum::Git::Blob.new(obj)
       end
       
       def blobs
