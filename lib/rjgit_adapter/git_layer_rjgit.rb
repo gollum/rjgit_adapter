@@ -437,7 +437,7 @@ module Gollum
       def lstree(sha, options={})
         entries = RJGit::Porcelain.ls_tree(@repo.jrepo, nil, @repo.find(sha, :tree), {:recursive => options[:recursive]})
         entries.map! do |entry| 
-          entry[:mode] = entry[:mode].to_s(8)
+          entry[:mode] = entry[:mode]
           entry[:sha]  = entry[:id]
           entry
         end
@@ -478,12 +478,20 @@ module Gollum
       end
       
       def /(file)
-        @tree.send(:/, file)
+        obj = @tree.send(:/, file)
+        return nil if obj.nil?
+        obj.is_a?(RJGit::Tree) ? Gollum::Git::Tree.new(obj) : Gollum::Git::Blob.new(obj)
       end
       
       def blobs
         return Array.new if @tree == {}
         @tree.blobs.map{|blob| Gollum::Git::Blob.new(blob) }
+      end
+
+      def find_blob(&block)
+        return nil unless block_given?
+        blob = @tree.find_blob {|blob| yield blob[:name] }
+        blob ? Gollum::Git::Blob.new(blob) : nil
       end
     end
     
