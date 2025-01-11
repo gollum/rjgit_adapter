@@ -434,8 +434,8 @@ module Gollum
         git.log(Gollum::Git.canonicalize(ref), path, options)
       end
       
-      def lstree(sha, options={})
-        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, nil, @repo.find(sha, :tree), {:recursive => options[:recursive]})
+      def lstree(sha, path=nil, options={})
+        entries = RJGit::Porcelain.ls_tree(@repo.jrepo, path, @repo.find(sha, :tree), {:recursive => options[:recursive]})
         entries.map! do |entry| 
           entry[:mode] = entry[:mode]
           entry[:sha]  = entry[:id]
